@@ -1,7 +1,27 @@
 part of 'auth_bloc.dart';
 
-abstract class AuthState extends Equatable {
-  const AuthState();
+class AuthState extends Equatable {
+  final String? loggedInUser;
+  final LoginStatus loginStatus;
+  final RegisterStatus registerStatus;
+
+  AuthState(
+      {this.loginStatus = LoginStatus.none,
+      this.registerStatus = RegisterStatus.none,
+      this.loggedInUser});
+
+  AuthState copyWith(
+      {String? loggedInUser,
+      LoginStatus? loginStatus,
+      RegisterStatus? registerStatus}) {
+    return AuthState(
+        loginStatus: loginStatus ?? this.loginStatus,
+        registerStatus: registerStatus ?? this.registerStatus,
+        loggedInUser: loggedInUser ?? this.loggedInUser);
+  }
+
+  @override
+  List<Object?> get props => [loginStatus, registerStatus, loggedInUser];
 }
 
 class AuthInitial extends AuthState {
@@ -15,35 +35,6 @@ class LoadingState extends AuthState {
   List<Object?> get props => [];
 }
 
-class NotLoggedInState extends AuthState {
-  @override
-  List<Object?> get props => [];
-}
+enum LoginStatus { none, LoggedIn, Failed, AuthError, Started }
 
-class LoggedInState extends AuthState {
-  final String username;
-
-  LoggedInState(this.username);
-
-  @override
-  List<Object?> get props => [username];
-}
-
-class FailureAlertState extends AuthState {
-  final String errorMessage;
-
-  FailureAlertState(this.errorMessage);
-  @override
-  List<Object?> get props => [errorMessage];
-}
-
-class WaitingState extends AuthState {
-  @override
-  // TODO: implement props
-  List<Object?> get props => [];
-}
-
-class RegisteredState extends AuthState {
-  @override
-  List<Object?> get props => [];
-}
+enum RegisterStatus { none, Registered, Failed, Exists, Started }

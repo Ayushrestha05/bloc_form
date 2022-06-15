@@ -15,15 +15,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final prefs = await SharedPreferences.getInstance();
       //Return empty string if no logged user is found
       String loggedUserJSON = prefs.getString('logged') ?? '';
+      print(prefs.getString('users'));
       if (loggedUserJSON != '') {
-        emit(LoggedInState(loggedUserJSON));
+        emit(AuthState(loggedInUser: loggedUserJSON));
       } else {
-        emit(NotLoggedInState());
+        emit(AuthState());
       }
     });
 
     on<LoginEvent>((event, emit) async {
       print("Login Event Started");
+      // LoginStatus Started
+      emit(state.copyWith(
+          loginStatus: LoginStatus.Started,
+          registerStatus: RegisterStatus.none));
+      await Future.delayed(const Duration(seconds: 3));
       //Get SharedPreferences Instance
       final prefs = await SharedPreferences.getInstance();
       //Create empty list of Users
@@ -36,21 +42,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         //From the decoded JSON, convert each element to User object and then add the User Object to the list.
         decode.forEach((e) => userList.add(User(e['username'], e['password'])));
       }
-      print(userList);
       if (userList.any((element) =>
           element.username == event.username &&
           element.password == event.password)) {
         prefs.setString('logged', event.username);
-        emit(LoggedInState(event.username));
+        emit(state.copyWith(
+            loggedInUser: event.username, loginStatus: LoginStatus.LoggedIn));
       } else {
         //Emit a State that shows Alert Dialog
-        emit(FailureAlertState("Wrong Credentials / No User Found"));
-        emit(NotLoggedInState());
+        emit(state.copyWith(loginStatus: LoginStatus.AuthError));
       }
     });
 
     on<RegisterEvent>((event, emit) async {
       print("Register Event Started");
+      emit(AuthState(
+          registerStatus: RegisterStatus.Started,
+          loginStatus: LoginStatus.none));
       //Get SharedPreferences Instance
       final prefs = await SharedPreferences.getInstance();
       //Create empty list of Users
@@ -63,10 +71,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         //From the decoded JSON, convert each element to User object and then add the User Object to the list.
         decode.forEach((e) => userList.add(User(e['username'], e['password'])));
       }
+      //Check if the user exists already
       if (userList.any((element) =>
           element.username.toLowerCase() == event.username.toLowerCase())) {
-        emit(FailureAlertState("User Already Exists"));
-        emit(NotLoggedInState());
+        emit(AuthState(registerStatus: RegisterStatus.Exists));
       } else {
         //Add the newly registered user to the list
         userList.add(User(event.username, event.password));
@@ -76,8 +84,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         prefs.setString('users', encodeJSON);
         //Save the newly registered User in Device
         prefs.setString('logged', event.username);
-        emit(RegisteredState());
-        emit(LoggedInState(event.username));
+        emit(AuthState(
+            registerStatus: RegisterStatus.Registered,
+            loggedInUser: event.username));
       }
     });
 
@@ -85,7 +94,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print("Logout Event Started");
       final prefs = await SharedPreferences.getInstance();
       prefs.remove('logged');
-      emit(NotLoggedInState());
+      emit(AuthState(
+          loggedInUser: null,
+          registerStatus: RegisterStatus.none,
+          loginStatus: LoginStatus.none));
     });
 
     on<ClearDataEvent>((event, emit) async {
@@ -93,7 +105,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final prefs = await SharedPreferences.getInstance();
       prefs.remove('users');
       prefs.remove('logged');
-      emit(NotLoggedInState());
+      emit(AuthState(
+          loggedInUser: null,
+          registerStatus: RegisterStatus.none,
+          loginStatus: LoginStatus.none));
     });
   }
 }

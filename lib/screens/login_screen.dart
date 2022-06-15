@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscureText = true;
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,13 +76,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ElevatedButton(
-                        onPressed: () {
-                          BlocProvider.of<AuthBloc>(context)
-                            ..add(LoginEvent(_usernameController.text,
-                                _passwordController.text));
-                        },
-                        child: const Text('Login')),
+                    BlocBuilder<AuthBloc, AuthState>(
+                      builder: (context, state) {
+                        if (state.loginStatus == LoginStatus.Started) {
+                          return CircularProgressIndicator();
+                        }
+                        return ElevatedButton(
+                            onPressed: () {
+                              BlocProvider.of<AuthBloc>(context)
+                                ..add(LoginEvent(_usernameController.text,
+                                    _passwordController.text));
+                            },
+                            child: const Text('Login'));
+                      },
+                    ),
                     ElevatedButton(
                         onPressed: () {
                           BlocProvider.of<AuthBloc>(context)

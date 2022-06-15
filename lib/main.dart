@@ -33,28 +33,38 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is RegisteredState) {
-          Navigator.pop(context);
-        }
+        if (state is AuthState) {
+          if (state.registerStatus == RegisterStatus.Registered) {
+            Navigator.pop(context);
+          }
+          if (state.loginStatus == LoginStatus.AuthError) {
+            showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                      title: Text('Error'),
+                      content: Text('Bad Credentials'),
+                    ));
+          }
 
-        if (state is FailureAlertState) {
-          showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                    title: Text('Error'),
-                    content: Text(state.errorMessage),
-                  ));
+          if (state.registerStatus == RegisterStatus.Exists) {
+            showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                      title: Text('Error'),
+                      content: Text('User Exists Already'),
+                    ));
+          }
         }
       },
       builder: (context, state) {
-        if (state is NotLoggedInState) {
-          return const LoginScreen();
-        }
-
-        if (state is LoggedInState) {
-          return UserScreen(
-            username: state.username,
-          );
+        if (state is AuthState) {
+          if (state.loggedInUser != null) {
+            return UserScreen(
+              username: state.loggedInUser!,
+            );
+          } else {
+            return const LoginScreen();
+          }
         }
 
         return Container();
